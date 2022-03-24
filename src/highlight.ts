@@ -219,8 +219,13 @@ export function tagHighlighter(tags: readonly {tag: Tag | readonly Tag[], class:
     if (targetScope && scope != targetScope) return null
     let cls = all
     for (let tag of tags) {
-      let tagClass = map[tag.id]
-      if (tagClass) cls = cls ? cls + " " + tagClass : tagClass
+      for (let sub of tag.set) {
+        let tagClass = map[sub.id]
+        if (tagClass) {
+          cls = cls ? cls + " " + tagClass : tagClass
+          break
+        }
+      }
     }
     return cls
   }
