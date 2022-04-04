@@ -5,7 +5,7 @@ let nextTagID = 0
 /// Highlighting tags are markers that denote a highlighting category.
 /// They are [associated](#highlight.styleTags) with parts of a syntax
 /// tree by a language mode, and then mapped to an actual CSS style by
-/// a [highlight style](#highlight.HighlightStyle).
+/// a [highlighter](#highlight.Highlighter).
 ///
 /// Because syntax tree node types and highlight styles have to be
 /// able to talk the same language, CodeMirror uses a mostly _closed_
@@ -25,8 +25,8 @@ export class Tag {
 
   /// @internal
   constructor(
-    /// The set of tags that match this tag, starting with this one
-    /// itself, sorted in order of decreasing specificity. @internal
+    /// The set of this tag and all its parent tags, starting with
+    /// this one itself and sorted in order of decreasing specificity.
     readonly set: Tag[],
     /// The base unmodified tag that this one is based on, if it's
     /// modified @internal
@@ -36,10 +36,10 @@ export class Tag {
   ) {}
 
   /// Define a new tag. If `parent` is given, the tag is treated as a
-  /// sub-tag of that parent, and [highlight
-  /// styles](#highlight.HighlightStyle) that don't mention this tag
-  /// will try to fall back to the parent tag (or grandparent tag,
-  /// etc).
+  /// sub-tag of that parent, and
+  /// [highlighters](#highlight.tagHighlighter) that don't mention
+  /// this tag will try to fall back to the parent tag (or grandparent
+  /// tag, etc).
   static define(parent?: Tag): Tag {
     if (parent?.base) throw new Error("Can not derive from a modified tag")
     let tag = new Tag([], null, [])
@@ -99,16 +99,15 @@ function permute<T>(array: readonly T[]): (readonly T[])[] {
 }
 
 /// This function is used to add a set of tags to a language syntax
-/// via
-/// [`LRParser.configure`](https://lezer.codemirror.net/docs/ref#lr.LRParser.configure).
+/// via [`NodeSet.extend`](#common.NodeSet.extend) or
+/// [`LRParser.configure`](#lr.LRParser.configure).
 ///
 /// The argument object maps node selectors to [highlighting
 /// tags](#highlight.Tag) or arrays of tags.
 ///
 /// Node selectors may hold one or more (space-separated) node paths.
-/// Such a path can be a [node
-/// name](https://lezer.codemirror.net/docs/ref#common.NodeType.name),
-/// or multiple node names (or `*` wildcards) separated by slash
+/// Such a path can be a [node name](#common.NodeType.name), or
+/// multiple node names (or `*` wildcards) separated by slash
 /// characters, as in `"Block/Declaration/VariableName"`. Such a path
 /// matches the final node but only if its direct parent nodes are the
 /// other nodes mentioned. A `*` in such a path matches any parent,
@@ -198,8 +197,17 @@ class Rule {
   get depth() { return this.context ? this.context.length : 0 }
 }
 
+/// A highlighter defines a mapping from highlighting tags and
+/// language scopes to CSS
+/// class names. They are usually defined via
+/// [`tagHighlighter`](#highlight.TagHighlighter) or some wrapper
+/// around that, but it is possible to define your own function from
+/// scratch.
 export type Highlighter = (tags: readonly Tag[], scope: NodeType) => string | null
 
+/// Define a [highlighter](#highlight.Highlighter) from an array of
+/// tag/class pairs. Classes associated with more specific tags will
+/// take precedence.
 export function tagHighlighter(tags: readonly {tag: Tag | readonly Tag[], class: string}[], options?: {
   /// By default, highlighters apply to the entire document. You can
   /// scope them to a single language by providing the language's
@@ -231,8 +239,9 @@ export function tagHighlighter(tags: readonly {tag: Tag | readonly Tag[], class:
   }
 }
 
-/// Combines an array of highlighters into a single highlight function
-/// that returns all of the classes assigned for a given set of tags.
+/// Combines an array of [highlighters](#highlight.Highligher) into a
+/// single highlighter function that returns all of the classes
+/// assigned for a given set of tags.
 export function combinedHighlighter(highlighters: readonly Highlighter[]): Highlighter {
   if (highlighters.length == 1) return highlighters[0]
   return (tags, scope) => {
@@ -245,13 +254,10 @@ export function combinedHighlighter(highlighters: readonly Highlighter[]): Highl
   }
 }
 
-/// Run the tree highlighter over the given tree.
+/// Highlight the given [tree](#common.Tree) with the given
+/// [highlighter](#highight.Highlighter).
 export function highlightTree(
   tree: Tree,
-  /// Get the CSS classes used to style a given [tag](#highlight.Tag),
-  /// or `null` if it isn't styled. (You'll often want to pass a
-  /// highlight style's [`match`](#highlight.HighlightStyle.match)
-  /// method here.)
   highlighter: Highlighter,
   /// Assign styling to a region of the text. Will be called, in order
   /// of position, for any ranges where more than zero classes apply.
@@ -329,7 +335,7 @@ class HighlightBuilder {
         if (!next || nextPos > to) break
         pos = next.to + start
         if (pos > from) {
-          this.highlightRange(inner.cursor, Math.max(from, next.from + start), Math.min(to, pos),
+          this.highlightRange(inner.cursor(), Math.max(from, next.from + start), Math.min(to, pos),
                               inheritedClass, mounted.tree.type)
           this.startSpan(pos, cls)
         }
@@ -354,8 +360,7 @@ const comment = t(), name = t(), typeName = t(name), propertyName = t(name),
   content = t(), heading = t(content), keyword = t(), operator = t(),
   punctuation = t(), bracket = t(punctuation), meta = t()
 
-/// The default set of highlighting [tags](#highlight.Tag^define) used
-/// by regular language packages and themes.
+/// The default set of highlighting [tags](#highlight.Tag).
 ///
 /// This collection is heavily biased towards programming languages,
 /// and necessarily incomplete. A full ontology of syntactic
@@ -583,11 +588,11 @@ export const tags = {
   special: Tag.defineModifier()
 }
 
-/// This is a highlight style that adds stable, predictable classes to
+/// This is a highlighter that adds stable, predictable classes to
 /// tokens, for styling with external CSS.
 ///
-/// These tags are mapped to their name prefixed with `"cmt-"` (for
-/// example `"cmt-comment"`):
+/// The following tags are mapped to their name prefixed with `"tok-"`
+/// (for example `"tok-comment"`):
 ///
 /// * [`link`](#highlight.tags.link)
 /// * [`heading`](#highlight.tags.heading)
@@ -619,44 +624,44 @@ export const tags = {
 /// * [`regexp`](#highlight.tags.regexp),
 ///   [`escape`](#highlight.tags.escape), and
 ///   [`special`](#highlight.tags.special)[`(string)`](#highlight.tags.string)
-///   are mapped to `"cmt-string2"`
+///   are mapped to `"tok-string2"`
 /// * [`special`](#highlight.tags.special)[`(variableName)`](#highlight.tags.variableName)
-///   to `"cmt-variableName2"`
+///   to `"tok-variableName2"`
 /// * [`local`](#highlight.tags.local)[`(variableName)`](#highlight.tags.variableName)
-///   to `"cmt-variableName cmt-local"`
+///   to `"tok-variableName tok-local"`
 /// * [`definition`](#highlight.tags.definition)[`(variableName)`](#highlight.tags.variableName)
-///   to `"cmt-variableName cmt-definition"`
+///   to `"tok-variableName tok-definition"`
 /// * [`definition`](#highlight.tags.definition)[`(propertyName)`](#highlight.tags.propertyName)
-///   to `"cmt-propertyName cmt-definition"`
+///   to `"tok-propertyName tok-definition"`
 export const classHighlighter = tagHighlighter([
-  {tag: tags.link, class: "cmt-link"},
-  {tag: tags.heading, class: "cmt-heading"},
-  {tag: tags.emphasis, class: "cmt-emphasis"},
-  {tag: tags.strong, class: "cmt-strong"},
-  {tag: tags.keyword, class: "cmt-keyword"},
-  {tag: tags.atom, class: "cmt-atom"},
-  {tag: tags.bool, class: "cmt-bool"},
-  {tag: tags.url, class: "cmt-url"},
-  {tag: tags.labelName, class: "cmt-labelName"},
-  {tag: tags.inserted, class: "cmt-inserted"},
-  {tag: tags.deleted, class: "cmt-deleted"},
-  {tag: tags.literal, class: "cmt-literal"},
-  {tag: tags.string, class: "cmt-string"},
-  {tag: tags.number, class: "cmt-number"},
-  {tag: [tags.regexp, tags.escape, tags.special(tags.string)], class: "cmt-string2"},
-  {tag: tags.variableName, class: "cmt-variableName"},
-  {tag: tags.local(tags.variableName), class: "cmt-variableName cmt-local"},
-  {tag: tags.definition(tags.variableName), class: "cmt-variableName cmt-definition"},
-  {tag: tags.special(tags.variableName), class: "cmt-variableName2"},
-  {tag: tags.definition(tags.propertyName), class: "cmt-propertyName cmt-definition"},
-  {tag: tags.typeName, class: "cmt-typeName"},
-  {tag: tags.namespace, class: "cmt-namespace"},
-  {tag: tags.className, class: "cmt-className"},
-  {tag: tags.macroName, class: "cmt-macroName"},
-  {tag: tags.propertyName, class: "cmt-propertyName"},
-  {tag: tags.operator, class: "cmt-operator"},
-  {tag: tags.comment, class: "cmt-comment"},
-  {tag: tags.meta, class: "cmt-meta"},
-  {tag: tags.invalid, class: "cmt-invalid"},
-  {tag: tags.punctuation, class: "cmt-punctuation"}
+  {tag: tags.link, class: "tok-link"},
+  {tag: tags.heading, class: "tok-heading"},
+  {tag: tags.emphasis, class: "tok-emphasis"},
+  {tag: tags.strong, class: "tok-strong"},
+  {tag: tags.keyword, class: "tok-keyword"},
+  {tag: tags.atom, class: "tok-atom"},
+  {tag: tags.bool, class: "tok-bool"},
+  {tag: tags.url, class: "tok-url"},
+  {tag: tags.labelName, class: "tok-labelName"},
+  {tag: tags.inserted, class: "tok-inserted"},
+  {tag: tags.deleted, class: "tok-deleted"},
+  {tag: tags.literal, class: "tok-literal"},
+  {tag: tags.string, class: "tok-string"},
+  {tag: tags.number, class: "tok-number"},
+  {tag: [tags.regexp, tags.escape, tags.special(tags.string)], class: "tok-string2"},
+  {tag: tags.variableName, class: "tok-variableName"},
+  {tag: tags.local(tags.variableName), class: "tok-variableName tok-local"},
+  {tag: tags.definition(tags.variableName), class: "tok-variableName tok-definition"},
+  {tag: tags.special(tags.variableName), class: "tok-variableName2"},
+  {tag: tags.definition(tags.propertyName), class: "tok-propertyName tok-definition"},
+  {tag: tags.typeName, class: "tok-typeName"},
+  {tag: tags.namespace, class: "tok-namespace"},
+  {tag: tags.className, class: "tok-className"},
+  {tag: tags.macroName, class: "tok-macroName"},
+  {tag: tags.propertyName, class: "tok-propertyName"},
+  {tag: tags.operator, class: "tok-operator"},
+  {tag: tags.comment, class: "tok-comment"},
+  {tag: tags.meta, class: "tok-meta"},
+  {tag: tags.invalid, class: "tok-invalid"},
+  {tag: tags.punctuation, class: "tok-punctuation"}
 ])
