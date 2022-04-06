@@ -198,12 +198,20 @@ class Rule {
 }
 
 /// A highlighter defines a mapping from highlighting tags and
-/// language scopes to CSS
-/// class names. They are usually defined via
+/// language scopes to CSS class names. They are usually defined via
 /// [`tagHighlighter`](#highlight.TagHighlighter) or some wrapper
-/// around that, but it is possible to define your own function from
-/// scratch.
-export type Highlighter = (tags: readonly Tag[], scope: NodeType) => string | null
+/// around that, but it is possible to define your own highlighter
+/// from scratch.
+export interface Highlighter {
+  /// Get the set of classes that should be applied to the given set
+  /// of highlighting tags, or null if this highlighter doesn't assign
+  /// a style to the tags.
+  style(tags: readonly Tag[]): string | null
+  /// When given, the highlighter will only be applied to trees on
+  /// whose [top](#common.NodeType.isTop) node this predicate returns
+  /// true.
+  scope?(node: NodeType): boolean
+}
 
 /// Define a [highlighter](#highlight.Highlighter) from an array of
 /// tag/class pairs. Classes associated with more specific tags will
@@ -212,9 +220,9 @@ export function tagHighlighter(tags: readonly {tag: Tag | readonly Tag[], class:
   /// By default, highlighters apply to the entire document. You can
   /// scope them to a single language by providing the language's
   /// [top node](#language.Language.topNode) here.
-  scope?: NodeType,
-  /// Add a style to _all_ content. Probably only useful in
-  /// combination with `scope`.
+  scope?: (node: NodeType) => boolean,
+  /// Add a style to _all_ tokens. Probably only useful in combination
+  /// with `scope`.
   all?: string
 }): Highlighter {
   let map: {[tagID: number]: string | null} = Object.create(null)
@@ -222,43 +230,39 @@ export function tagHighlighter(tags: readonly {tag: Tag | readonly Tag[], class:
     if (!Array.isArray(style.tag)) map[(style.tag as Tag).id] = style.class
     else for (let tag of style.tag) map[tag.id] = style.class
   }
-  let {scope: targetScope, all = null} = options || {}
-  return (tags, scope) => {
-    if (targetScope && scope != targetScope) return null
-    let cls = all
-    for (let tag of tags) {
-      for (let sub of tag.set) {
-        let tagClass = map[sub.id]
-        if (tagClass) {
-          cls = cls ? cls + " " + tagClass : tagClass
-          break
+  let {scope, all = null} = options || {}
+  return {
+    style: (tags) => {
+      let cls = all
+      for (let tag of tags) {
+        for (let sub of tag.set) {
+          let tagClass = map[sub.id]
+          if (tagClass) {
+            cls = cls ? cls + " " + tagClass : tagClass
+            break
+          }
         }
       }
-    }
-    return cls
+      return cls
+    },
+    scope: scope
   }
 }
 
-/// Combines an array of [highlighters](#highlight.Highligher) into a
-/// single highlighter function that returns all of the classes
-/// assigned for a given set of tags.
-export function combinedHighlighter(highlighters: readonly Highlighter[]): Highlighter {
-  if (highlighters.length == 1) return highlighters[0]
-  return (tags, scope) => {
-    let result = null
-    for (let highlighter of highlighters) {
-      let value = highlighter(tags, scope)
-      if (value) result = result ? result + " " + value : value
-    }
-    return result
+export function highlightTags(highlighters: readonly Highlighter[], tags: readonly Tag[]): string | null {
+  let result = null
+  for (let highlighter of highlighters) {
+    let value = highlighter.style(tags)
+    if (value) result = result ? result + " " + value : value
   }
+  return result
 }
 
 /// Highlight the given [tree](#common.Tree) with the given
 /// [highlighter](#highight.Highlighter).
 export function highlightTree(
   tree: Tree,
-  highlighter: Highlighter,
+  highlighter: Highlighter | readonly Highlighter[],
   /// Assign styling to a region of the text. Will be called, in order
   /// of position, for any ranges where more than zero classes apply.
   /// `classes` is a space separated string of CSS classes.
@@ -268,8 +272,8 @@ export function highlightTree(
   /// The end of the range.
   to = tree.length,
 ) {
-  let builder = new HighlightBuilder(from, highlighter, putStyle)
-  builder.highlightRange(tree.cursor(), from, to, "", tree.type)
+  let builder = new HighlightBuilder(from, Array.isArray(highlighter) ? highlighter : [highlighter], putStyle)
+  builder.highlightRange(tree.cursor(), from, to, "", builder.highlighters)
   builder.flush(to)
 }
 
@@ -277,7 +281,7 @@ class HighlightBuilder {
   class = ""
   constructor(
     public at: number,
-    readonly highlighter: Highlighter,
+    readonly highlighters: readonly Highlighter[],
     readonly span: (from: number, to: number, cls: string) => void
   ) {}
 
@@ -293,16 +297,16 @@ class HighlightBuilder {
     if (to > this.at && this.class) this.span(this.at, to, this.class)
   }
 
-  highlightRange(cursor: TreeCursor, from: number, to: number, inheritedClass: string, scope: NodeType) {
+  highlightRange(cursor: TreeCursor, from: number, to: number, inheritedClass: string, highlighters: readonly Highlighter[]) {
     let {type, from: start, to: end} = cursor
     if (start >= to || end <= from) return
-    if (type.isTop) scope = type
+    if (type.isTop) highlighters = this.highlighters.filter(h => !h.scope || h.scope(type))
 
     let cls = inheritedClass
     let rule = type.prop(ruleNodeProp), opaque = false
     while (rule) {
       if (!rule.context || cursor.matchContext(rule.context)) {
-        let tagCls = this.highlighter(rule.tags, scope)
+        let tagCls = highlightTags(highlighters, rule.tags)
         if (tagCls) {
           if (cls) cls += " "
           cls += tagCls
@@ -320,6 +324,7 @@ class HighlightBuilder {
     let mounted = cursor.tree && cursor.tree.prop(NodeProp.mounted)
     if (mounted && mounted.overlay) {
       let inner = cursor.node.enter(mounted.overlay[0].from + start, 1)!
+      let innerHighlighters = this.highlighters.filter(h => !h.scope || h.scope(mounted!.tree.type))
       let hasChild = cursor.firstChild()
       for (let i = 0, pos = start;; i++) {
         let next = i < mounted.overlay.length ? mounted.overlay[i] : null
@@ -327,7 +332,7 @@ class HighlightBuilder {
         let rangeFrom = Math.max(from, pos), rangeTo = Math.min(to, nextPos)
         if (rangeFrom < rangeTo && hasChild) {
           while (cursor.from < rangeTo) {
-            this.highlightRange(cursor, rangeFrom, rangeTo, inheritedClass, scope)
+            this.highlightRange(cursor, rangeFrom, rangeTo, inheritedClass, highlighters)
             this.startSpan(Math.min(to, cursor.to), cls)
             if (cursor.to >= nextPos || !cursor.nextSibling()) break
           }
@@ -336,7 +341,7 @@ class HighlightBuilder {
         pos = next.to + start
         if (pos > from) {
           this.highlightRange(inner.cursor(), Math.max(from, next.from + start), Math.min(to, pos),
-                              inheritedClass, mounted.tree.type)
+                              inheritedClass, innerHighlighters)
           this.startSpan(pos, cls)
         }
       }
@@ -345,7 +350,7 @@ class HighlightBuilder {
       do {
         if (cursor.to <= from) continue
         if (cursor.from >= to) break
-        this.highlightRange(cursor, from, to, inheritedClass, scope)
+        this.highlightRange(cursor, from, to, inheritedClass, highlighters)
         this.startSpan(Math.min(to, cursor.to), cls)
       } while (cursor.nextSibling())
       cursor.parent()
