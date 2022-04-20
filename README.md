@@ -9,6 +9,6 @@ intended for use in an editor or similar system.
 parse trees.
 
 Its programming interface is documented on [the
-website](https://lezer.codemirror.net/docs/ref/#common).
+website](https://lezer.codemirror.net/docs/ref/#highlight).
 
 This code is licensed under an MIT license.
