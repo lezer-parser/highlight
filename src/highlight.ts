@@ -199,9 +199,9 @@ class Rule {
 
 /// A highlighter defines a mapping from highlighting tags and
 /// language scopes to CSS class names. They are usually defined via
-/// [`tagHighlighter`](#highlight.TagHighlighter) or some wrapper
-/// around that, but it is possible to define your own highlighter
-/// from scratch.
+/// [`tagHighlighter`](#highlight.tagHighlighter) or some wrapper
+/// around that, but it is also possible to implement them from
+/// scratch.
 export interface Highlighter {
   /// Get the set of classes that should be applied to the given set
   /// of highlighting tags, or null if this highlighter doesn't assign
@@ -218,8 +218,8 @@ export interface Highlighter {
 /// take precedence.
 export function tagHighlighter(tags: readonly {tag: Tag | readonly Tag[], class: string}[], options?: {
   /// By default, highlighters apply to the entire document. You can
-  /// scope them to a single language by providing the language's
-  /// [top node](#language.Language.topNode) here.
+  /// scope them to a single language by providing the tree's
+  /// [top](#common.NodeType.isTop) node type here.
   scope?: (node: NodeType) => boolean,
   /// Add a style to _all_ tokens. Probably only useful in combination
   /// with `scope`.
@@ -259,7 +259,7 @@ export function highlightTags(highlighters: readonly Highlighter[], tags: readon
 }
 
 /// Highlight the given [tree](#common.Tree) with the given
-/// [highlighter](#highight.Highlighter).
+/// [highlighter](#highlight.Highlighter).
 export function highlightTree(
   tree: Tree,
   highlighter: Highlighter | readonly Highlighter[],
@@ -621,7 +621,7 @@ export const tags = {
 /// * [`operator`](#highlight.tags.operator)
 /// * [`comment`](#highlight.tags.comment)
 /// * [`meta`](#highlight.tags.meta)
-/// * [`punctuation`](#highlight.tags.puncutation)
+/// * [`punctuation`](#highlight.tags.punctuation)
 /// * [`invalid`](#highlight.tags.invalid)
 ///
 /// In addition, these mappings are provided:
