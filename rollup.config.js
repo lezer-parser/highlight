@@ -3,7 +3,7 @@ import {nodeResolve} from "@rollup/plugin-node-resolve"
 import commonJS from "@rollup/plugin-commonjs"
 
 export default {
-  input: "./src/highlight.ts",
+  input: "./src/index.ts",
   external: ["@lezer/common"],
   output: [{
     format: "cjs",
