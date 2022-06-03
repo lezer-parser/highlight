@@ -249,7 +249,7 @@ export function tagHighlighter(tags: readonly {tag: Tag | readonly Tag[], class:
   }
 }
 
-export function highlightTags(highlighters: readonly Highlighter[], tags: readonly Tag[]): string | null {
+function highlightTags(highlighters: readonly Highlighter[], tags: readonly Tag[]): string | null {
   let result = null
   for (let highlighter of highlighters) {
     let value = highlighter.style(tags)
