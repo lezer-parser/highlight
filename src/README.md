@@ -11,8 +11,6 @@ on a Lezer syntax tree.
 
 @tagHighlighter
 
-@highlightTags
-
 @highlightTree
 
 @classHighlighter
