@@ -467,7 +467,7 @@ export const tags = {
 
   /// An operator.
   operator,
-  /// An [operator](#highlight.tags.operator) that defines something.
+  /// An [operator](#highlight.tags.operator) that dereferences something.
   derefOperator: t(operator),
   /// Arithmetic-related [operator](#highlight.tags.operator).
   arithmeticOperator: t(operator),
