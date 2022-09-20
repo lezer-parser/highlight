@@ -1,4 +1,4 @@
-import {Tree, NodeType, NodeProp, TreeCursor} from "@lezer/common"
+import {Tree, NodeType, NodeProp, TreeCursor, SyntaxNodeRef} from "@lezer/common"
 
 let nextTagID = 0
 
@@ -185,6 +185,9 @@ class Rule {
               readonly context: readonly string[] | null,
               public next?: Rule) {}
 
+  get opaque() { return this.mode == Mode.Opaque }
+  get inherit() { return this.mode == Mode.Inherit }
+
   sort(other: Rule | undefined) {
     if (!other || other.depth < this.depth) {
       this.next = other
@@ -356,6 +359,15 @@ class HighlightBuilder {
       cursor.parent()
     }
   }
+}
+
+/// Match a syntax node's [highlight rules](#highlight.styleTags). If
+/// there's a match, return its set of tags, and whether it is
+/// opaque (uses a `!`) or applies to all child nodes (`/...`).
+export function getStyleTags(node: SyntaxNodeRef): {tags: readonly Tag[], opaque: boolean, inherit: boolean} | null {
+  let rule = node.type.prop(ruleNodeProp)
+  while (rule && rule.context && !node.matchContext(rule.context)) rule = rule.next
+  return rule || null
 }
 
 const t = Tag.define

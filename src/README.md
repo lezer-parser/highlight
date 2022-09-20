@@ -7,6 +7,8 @@ on a Lezer syntax tree.
 
 @styleTags
 
+@getStyleTags
+
 @Highlighter
 
 @tagHighlighter
