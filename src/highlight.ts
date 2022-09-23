@@ -198,6 +198,8 @@ class Rule {
   }
 
   get depth() { return this.context ? this.context.length : 0 }
+
+  static empty = new Rule([], Mode.Normal, null)
 }
 
 /// A highlighter defines a mapping from highlighting tags and
@@ -248,7 +250,7 @@ export function tagHighlighter(tags: readonly {tag: Tag | readonly Tag[], class:
       }
       return cls
     },
-    scope: scope
+    scope
   }
 }
 
@@ -306,23 +308,16 @@ class HighlightBuilder {
     if (type.isTop) highlighters = this.highlighters.filter(h => !h.scope || h.scope(type))
 
     let cls = inheritedClass
-    let rule = type.prop(ruleNodeProp), opaque = false
-    while (rule) {
-      if (!rule.context || cursor.matchContext(rule.context)) {
-        let tagCls = highlightTags(highlighters, rule.tags)
-        if (tagCls) {
-          if (cls) cls += " "
-          cls += tagCls
-          if (rule.mode == Mode.Inherit) inheritedClass += (inheritedClass ? " " : "") + tagCls
-          else if (rule.mode == Mode.Opaque) opaque = true
-        }
-        break
-      }
-      rule = rule.next
+    let rule = getStyleTags(cursor) as Rule || Rule.empty
+    let tagCls = highlightTags(highlighters, rule.tags)
+    if (tagCls) {
+      if (cls) cls += " "
+      cls += tagCls
+      if (rule.mode == Mode.Inherit) inheritedClass += (inheritedClass ? " " : "") + tagCls
     }
 
     this.startSpan(cursor.from, cls)
-    if (opaque) return
+    if (rule.opaque) return
 
     let mounted = cursor.tree && cursor.tree.prop(NodeProp.mounted)
     if (mounted && mounted.overlay) {
