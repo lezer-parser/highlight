@@ -1,3 +1,9 @@
+## 1.1.1 (2022-09-23)
+
+### Bug fixes
+
+Make sure `all` highlighting is applied even to nodes with no associated highlight tags.
+
 ## 1.1.0 (2022-09-20)
 
 ### New features
