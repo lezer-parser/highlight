@@ -79,8 +79,8 @@ class Modifier {
     if (exists) return exists
     let set: Tag[] = [], tag = new Tag(set, base, mods)
     for (let m of mods) m.instances.push(tag)
-    let configs = permute(mods)
-    for (let parent of base.set) for (let config of configs)
+    let configs = powerSet(mods)
+    for (let parent of base.set) if (!parent.modified.length) for (let config of configs)
       set.push(Modifier.get(parent, config))
     return tag
   }
@@ -90,12 +90,14 @@ function sameArray<T>(a: readonly T[], b: readonly T[]) {
   return a.length == b.length && a.every((x, i) => x == b[i])
 }
 
-function permute<T>(array: readonly T[]): (readonly T[])[] {
-  let result = [array]
+function powerSet<T>(array: readonly T[]): (readonly T[])[] {
+  let sets: T[][] = [[]]
   for (let i = 0; i < array.length; i++) {
-    for (let a of permute(array.slice(0, i).concat(array.slice(i + 1)))) result.push(a)
+    for (let j = 0, e = sets.length; j < e; j++) {
+      sets.push(sets[j].concat(array[i]))
+    }
   }
-  return result
+  return sets.sort((a, b) => b.length - a.length)
 }
 
 /// This function is used to add a set of tags to a language syntax
