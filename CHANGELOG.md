@@ -1,3 +1,9 @@
+## 1.1.2 (2022-10-18)
+
+### Bug fixes
+
+Fix an issue where unmodified tags were treated as having higher specificity than modified ones when computing precedence for tags with multiple modifiers.
+
 ## 1.1.1 (2022-09-23)
 
 ### Bug fixes
