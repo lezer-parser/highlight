@@ -1,3 +1,9 @@
+## 1.1.3 (2022-11-25)
+
+### Bug fixes
+
+Fix a bug where the highlighting over overlaid ranges falling within a highlighted node in the parent tree was sometimes broken.
+
 ## 1.1.2 (2022-10-18)
 
 ### Bug fixes
