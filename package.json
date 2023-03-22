@@ -5,6 +5,7 @@
   "main": "dist/index.cjs",
   "type": "module",
   "exports": {
+    "types": "./dist/highlight.d.ts",
     "import": "./dist/index.js",
     "require": "./dist/index.cjs"
   },
