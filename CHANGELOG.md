@@ -1,3 +1,9 @@
+## 1.1.4 (2023-03-24)
+
+### Bug fixes
+
+Make sure TypeScript declaration file has the same name as the ES module to avoid some TypeScript resolution issues.
+
 ## 1.1.3 (2022-11-25)
 
 ### Bug fixes
