@@ -1,3 +1,9 @@
+## 1.1.5 (2023-05-24)
+
+### Bug fixes
+
+Inheritable (`/...`) styles no longer apply across mounted subtrees.
+
 ## 1.1.4 (2023-03-24)
 
 ### Bug fixes
