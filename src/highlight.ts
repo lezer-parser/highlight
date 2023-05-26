@@ -318,7 +318,7 @@ class HighlightBuilder {
       if (rule.mode == Mode.Inherit) inheritedClass += (inheritedClass ? " " : "") + tagCls
     }
 
-    this.startSpan(cursor.from, cls)
+    this.startSpan(Math.max(from, start), cls)
     if (rule.opaque) return
 
     let mounted = cursor.tree && cursor.tree.prop(NodeProp.mounted)
@@ -342,7 +342,7 @@ class HighlightBuilder {
         if (pos > from) {
           this.highlightRange(inner.cursor(), Math.max(from, next.from + start), Math.min(to, pos),
                               "", innerHighlighters)
-          this.startSpan(pos, cls)
+          this.startSpan(Math.min(to, pos), cls)
         }
       }
       if (hasChild) cursor.parent()
