@@ -1,3 +1,9 @@
+## 1.1.6 (2023-05-26)
+
+### Bug fixes
+
+Fix a bug in  that could cause it to add random highlighting to the text between parts of an overlaid tree.
+
 ## 1.1.5 (2023-05-24)
 
 ### Bug fixes
