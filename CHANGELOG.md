@@ -1,3 +1,9 @@
+## 1.1.7 (2023-10-26)
+
+### Internal updates
+
+Add support for ESM/bundler module resolution in TypeScript
+
 ## 1.1.6 (2023-05-26)
 
 ### Bug fixes
