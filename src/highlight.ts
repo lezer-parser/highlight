@@ -266,7 +266,9 @@ function highlightTags(highlighters: readonly Highlighter[], tags: readonly Tag[
 }
 
 /// Highlight the given [tree](#common.Tree) with the given
-/// [highlighter](#highlight.Highlighter).
+/// [highlighter](#highlight.Highlighter). Often, the higher-level
+/// [`highlightCode`](#highlight.highlightCode) function is easier to
+/// use.
 export function highlightTree(
   tree: Tree,
   highlighter: Highlighter | readonly Highlighter[],
@@ -282,6 +284,35 @@ export function highlightTree(
   let builder = new HighlightBuilder(from, Array.isArray(highlighter) ? highlighter : [highlighter], putStyle)
   builder.highlightRange(tree.cursor(), from, to, "", builder.highlighters)
   builder.flush(to)
+}
+
+/// Highlight the given tree with the given highlighter, calling
+/// `putText` for every piece of text, either with a set of classes or
+/// with the empty string when unstyled, and `putBreak` for every line
+/// break.
+export function highlightCode(code: string, tree: Tree, highlighter: Highlighter | readonly Highlighter[],
+                              putText: (code: string, classes: string) => void,
+                              putBreak: () => void,
+                              from = 0, to = code.length) {
+  let pos = from
+  function writeTo(p: number, classes: string) {
+    if (p <= pos) return
+    for (let text = code.slice(pos, p), i = 0;;) {
+      let nextBreak = text.indexOf("\n", i)
+      let upto = nextBreak < 0 ? text.length : nextBreak
+      if (upto > i) putText(text.slice(i, upto), classes)
+      if (nextBreak < 0) break
+      putBreak()
+      i = nextBreak + 1
+    }
+    pos = p
+  }
+
+  highlightTree(tree, highlighter, (from, to, classes) => {
+    writeTo(from, "")
+    writeTo(to, classes)
+  }, from, to)
+  writeTo(to, "")
 }
 
 class HighlightBuilder {

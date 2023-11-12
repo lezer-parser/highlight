@@ -13,6 +13,8 @@ on a Lezer syntax tree.
 
 @tagHighlighter
 
+@highlightCode
+
 @highlightTree
 
 @classHighlighter
