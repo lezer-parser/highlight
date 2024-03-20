@@ -241,6 +241,8 @@ export function tagHighlighter(tags: readonly {tag: Tag | readonly Tag[], class:
   return {
     style: (tags) => {
       let cls = all
+      if (tags === undefined)
+	  return cls
       for (let tag of tags) {
         for (let sub of tag.set) {
           let tagClass = map[sub.id]
