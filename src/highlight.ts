@@ -563,7 +563,7 @@ export const tags = {
   heading5: t(heading),
   /// A level 6 [heading](#highlight.tags.heading).
   heading6: t(heading),
-  /// A prose separator (such as a horizontal rule).
+  /// A prose [content](#highlight.tags.content) separator (such as a horizontal rule).
   contentSeparator: t(content),
   /// [Content](#highlight.tags.content) that represents a list.
   list: t(content),
