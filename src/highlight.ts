@@ -25,6 +25,8 @@ export class Tag {
 
   /// @internal
   constructor(
+    /// The optional name of the base tag @internal
+    readonly name: string,
     /// The set of this tag and all its parent tags, starting with
     /// this one itself and sorted in order of decreasing specificity.
     readonly set: Tag[],
@@ -35,14 +37,24 @@ export class Tag {
     readonly modified: readonly Modifier[]
   ) {}
 
+  toString() {
+    let {name} = this
+    for (let mod of this.modified) if (mod.name) name = `${mod.name}(${name})`
+    return name
+  }
+
   /// Define a new tag. If `parent` is given, the tag is treated as a
   /// sub-tag of that parent, and
   /// [highlighters](#highlight.tagHighlighter) that don't mention
   /// this tag will try to fall back to the parent tag (or grandparent
   /// tag, etc).
-  static define(parent?: Tag): Tag {
+  static define(name?: string, parent?: Tag): Tag
+  static define(parent?: Tag): Tag
+  static define(nameOrParent?: string | Tag, parent?: Tag): Tag {
+    let name = typeof nameOrParent == "string" ? nameOrParent : "?"
+    if (nameOrParent instanceof Tag) parent = nameOrParent
     if (parent?.base) throw new Error("Can not derive from a modified tag")
-    let tag = new Tag([], null, [])
+    let tag = new Tag(name, [], null, [])
     tag.set.push(tag)
     if (parent) for (let t of parent.set) tag.set.push(t)
     return tag
@@ -58,8 +70,8 @@ export class Tag {
   /// smaller set of modifiers is registered as a parent, so that for
   /// example `m1(m2(m3(t1)))` is a subtype of `m1(m2(t1))`,
   /// `m1(m3(t1)`, and so on.
-  static defineModifier(): (tag: Tag) => Tag {
-    let mod = new Modifier
+  static defineModifier(name?: string): (tag: Tag) => Tag {
+    let mod = new Modifier(name)
     return (tag: Tag) => {
       if (tag.modified.indexOf(mod) > -1) return tag
       return Modifier.get(tag.base || tag, tag.modified.concat(mod).sort((a, b) => a.id - b.id))
@@ -73,11 +85,13 @@ class Modifier {
   instances: Tag[] = []
   id = nextModifierID++
 
+  constructor(readonly name?: string) {}
+
   static get(base: Tag, mods: readonly Modifier[]) {
     if (!mods.length) return base
     let exists = mods[0].instances.find(t => t.base == base && sameArray(mods, t.modified))
     if (exists) return exists
-    let set: Tag[] = [], tag = new Tag(set, base, mods)
+    let set: Tag[] = [], tag = new Tag(base.name, set, base, mods)
     for (let m of mods) m.instances.push(tag)
     let configs = powerSet(mods)
     for (let parent of base.set) if (!parent.modified.length) for (let config of configs)
@@ -607,23 +621,23 @@ export const tags = {
   /// [Modifier](#highlight.Tag^defineModifier) that indicates that a
   /// given element is being defined. Expected to be used with the
   /// various [name](#highlight.tags.name) tags.
-  definition: Tag.defineModifier(),
+  definition: Tag.defineModifier("definition"),
   /// [Modifier](#highlight.Tag^defineModifier) that indicates that
   /// something is constant. Mostly expected to be used with
   /// [variable names](#highlight.tags.variableName).
-  constant: Tag.defineModifier(),
+  constant: Tag.defineModifier("constant"),
   /// [Modifier](#highlight.Tag^defineModifier) used to indicate that
   /// a [variable](#highlight.tags.variableName) or [property
   /// name](#highlight.tags.propertyName) is being called or defined
   /// as a function.
-  function: Tag.defineModifier(),
+  function: Tag.defineModifier("function"),
   /// [Modifier](#highlight.Tag^defineModifier) that can be applied to
   /// [names](#highlight.tags.name) to indicate that they belong to
   /// the language's standard environment.
-  standard: Tag.defineModifier(),
+  standard: Tag.defineModifier("standard"),
   /// [Modifier](#highlight.Tag^defineModifier) that indicates a given
   /// [names](#highlight.tags.name) is local to some scope.
-  local: Tag.defineModifier(),
+  local: Tag.defineModifier("local"),
 
   /// A generic variant [modifier](#highlight.Tag^defineModifier) that
   /// can be used to tag language-specific alternative variants of
@@ -631,7 +645,12 @@ export const tags = {
   /// forms of at least the [string](#highlight.tags.string) and
   /// [variable name](#highlight.tags.variableName) tags, since those
   /// come up a lot.
-  special: Tag.defineModifier()
+  special: Tag.defineModifier("special")
+}
+
+for (let name in tags) {
+  let val = (tags as any)[name]
+  if (val instanceof Tag) (val as any).name = name
 }
 
 /// This is a highlighter that adds stable, predictable classes to
