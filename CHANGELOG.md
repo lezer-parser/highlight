@@ -1,3 +1,9 @@
+## 1.2.1 (2024-08-13)
+
+### Bug fixes
+
+Give `Tag` objects an optional string name for debugging, and use it in their `toString` method.
+
 ## 1.2.0 (2023-11-12)
 
 ### New features
