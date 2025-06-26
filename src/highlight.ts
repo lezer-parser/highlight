@@ -146,7 +146,7 @@ function powerSet<T>(array: readonly T[]): (readonly T[])[] {
 /// For example:
 ///
 /// ```javascript
-/// parser.withProps(
+/// parser.configure({props: [
 ///   styleTags({
 ///     // Style Number and BigNumber nodes
 ///     "Number BigNumber": tags.number,
@@ -161,7 +161,7 @@ function powerSet<T>(array: readonly T[]): (readonly T[])[] {
 ///     // Style the node named "/" as punctuation
 ///     '"/"': tags.punctuation
 ///   })
-/// )
+/// ]})
 /// ```
 export function styleTags(spec: {[selector: string]: Tag | readonly Tag[]}) {
   let byName: {[name: string]: Rule} = Object.create(null)
