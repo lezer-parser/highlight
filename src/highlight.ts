@@ -191,7 +191,20 @@ export function styleTags(spec: {[selector: string]: Tag | readonly Tag[]}) {
   return ruleNodeProp.add(byName)
 }
 
-const ruleNodeProp = new NodeProp<Rule>()
+const ruleNodeProp = new NodeProp<Rule>({
+  combine(a: Rule | undefined, b: Rule | undefined) {
+    let cur: Rule | undefined, root: Rule, take: Rule
+    while (a || b) {
+      if (!a || a.depth > b!.depth) { take = b!; b = b!.next }
+      else { take = a!; a = a.next }
+      let copy = new Rule(take.tags, take.mode, take.context)
+      if (cur) cur.next = copy
+      else root = copy
+      cur = copy
+    }
+    return root!
+  }
+})
 
 const enum Mode { Opaque, Inherit, Normal }
 
