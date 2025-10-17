@@ -1,3 +1,9 @@
+## 1.2.2 (2025-10-17)
+
+### Bug fixes
+
+Fix an issue where adding additional highlighting info for a node that already had some rule would drop the old info.
+
 ## 1.2.1 (2024-08-13)
 
 ### Bug fixes
