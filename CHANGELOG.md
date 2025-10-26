@@ -1,3 +1,9 @@
+## 1.2.3 (2025-10-26)
+
+### Bug fixes
+
+Fix a regression in 1.2.2 when assigning new highlight tags to nodes.
+
 ## 1.2.2 (2025-10-17)
 
 ### Bug fixes
