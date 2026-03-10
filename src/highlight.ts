@@ -241,7 +241,7 @@ export interface Highlighter {
   /// Get the set of classes that should be applied to the given set
   /// of highlighting tags, or null if this highlighter doesn't assign
   /// a style to the tags.
-  style(tags: readonly Tag[]): string | null
+  style(tags: readonly Tag[] | null): string | null
   /// When given, the highlighter will only be applied to trees on
   /// whose [top](#common.NodeType.isTop) node this predicate returns
   /// true.
@@ -267,9 +267,9 @@ export function tagHighlighter(tags: readonly {tag: Tag | readonly Tag[], class:
   }
   let {scope, all = null} = options || {}
   return {
-    style: (tags) => {
+    style: (tags: readonly Tag[] | null) => {
       let cls = all
-      for (let tag of tags) {
+      for (let tag of (tags || [])) {
         for (let sub of tag.set) {
           let tagClass = map[sub.id]
           if (tagClass) {
