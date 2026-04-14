@@ -441,7 +441,7 @@ const comment = t(), name = t(), typeName = t(name), propertyName = t(name),
 /// constructs would fill a stack of books, and be impractical to
 /// write themes for. So try to make do with this set. If all else
 /// fails, [open an
-/// issue](https://github.com/codemirror/codemirror.next) to propose a
+/// issue](https://code.haverbeke.berlin/codemirror/dev/issues) to propose a
 /// new tag, or [define](#highlight.Tag^define) a local custom tag for
 /// your use case.
 ///

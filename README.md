@@ -1,6 +1,6 @@
 # @lezer/highlight
 
-[ [**WEBSITE**](http://lezer.codemirror.net) | [**ISSUES**](https://github.com/lezer-parser/lezer/issues) | [**FORUM**](https://discuss.codemirror.net/c/lezer) | [**CHANGELOG**](https://github.com/lezer-parser/highlight/blob/master/CHANGELOG.md) ]
+[ [**WEBSITE**](http://lezer.codemirror.net) | [**ISSUES**](https://code.haverbeke.berlin/lezer/lezer/issues) | [**FORUM**](https://discuss.codemirror.net/c/lezer) | [**CHANGELOG**](https://code.haverbeke.berlin/lezer/highlight/src/branch/main/CHANGELOG.md) ]
 
 [Lezer](https://lezer.codemirror.net/) is an incremental parser system
 intended for use in an editor or similar system.
